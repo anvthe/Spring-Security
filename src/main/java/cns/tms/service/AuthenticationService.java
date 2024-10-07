@@ -57,6 +57,9 @@ public class AuthenticationService {
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new RuntimeException("Old password is incorrect");
         }
+        if (!request.passwordsMatch()) {
+            throw new RuntimeException("New password and confirm password do not match");
+        }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
     }
