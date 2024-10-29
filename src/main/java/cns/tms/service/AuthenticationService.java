@@ -10,6 +10,7 @@ import cns.tms.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -32,6 +33,7 @@ public class AuthenticationService {
     public void register(RegisterRequestDTO request) {
         var user = User.builder()
                 .name(request.getName())
+                .email(request.getEmail())
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
@@ -50,6 +52,7 @@ public class AuthenticationService {
         }
     }
 
+    @Transactional
     public void updatePassword(UpdatePasswordRequestDTO request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = repository.findByUsername(username)

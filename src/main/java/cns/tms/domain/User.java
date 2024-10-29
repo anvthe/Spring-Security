@@ -28,6 +28,8 @@ public class User implements UserDetails {
 
     private String name;
 
+    private String email;
+
     @Column(unique = true)
     @NotBlank(message = "Username must be")
     private String username;

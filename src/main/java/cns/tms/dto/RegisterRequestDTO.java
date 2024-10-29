@@ -15,6 +15,8 @@ public class RegisterRequestDTO {
 
     private String name;
 
+    private String email;
+
     @Column(unique = true, nullable = false)
     @NotBlank(message = "Username is mandatory")
     private String username;
