@@ -6,6 +6,7 @@ import rko.guddo.dto.AuthenticationRequestDTO;
 import rko.guddo.dto.RegisterRequestDTO;
 import rko.guddo.dto.TokenRefreshDTO;
 import rko.guddo.dto.UpdatePasswordRequestDTO;
+import rko.guddo.exception.EmailAlreadyExistsException;
 import rko.guddo.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,22 +33,31 @@ public class AuthenticationService {
 
     //registration
     public void register(RegisterRequestDTO request) {
+
+        // Check if email already exists
+        if (repository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException("Email address already registered!");
+        }
+
+        // Build and save new user
         var user = User.builder()
-                .name(request.getName())
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
                 .email(request.getEmail())
-                .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .build();
         repository.save(user);
     }
 
+
+
     //login
     public String authenticate(@Valid AuthenticationRequestDTO request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(),
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(),
                 request.getPassword()));
         try {
-            var user = repository.findByUsername(request.getUsername()).orElseThrow();
+            var user = repository.findByEmail(request.getEmail()).orElseThrow();
             return jwtService.generateToken(user);
         } catch (UsernameNotFoundException usernameNotFoundException) {
             return usernameNotFoundException.getMessage();
@@ -57,9 +67,9 @@ public class AuthenticationService {
     //update password
     @Transactional
     public void updatePassword(UpdatePasswordRequestDTO request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = repository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = repository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email not found"));
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
             throw new RuntimeException("Old password is incorrect");
         }
@@ -74,14 +84,14 @@ public class AuthenticationService {
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authHeader = request.getHeader("Authorization");
         String refreshToken;
-        String username;
+        String email;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             refreshToken = authHeader.substring(7);
-            username = jwtService.extractUsername(refreshToken);
+            email = jwtService.extractEmail(refreshToken);
 
-            if (username != null) {
-                var user = repository.findByUsername(username).orElseThrow(
+            if (email != null) {
+                var user = repository.findByEmail(email).orElseThrow(
                         () -> new UsernameNotFoundException("User not found")
                 );
 

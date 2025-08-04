@@ -3,6 +3,7 @@ package rko.guddo.controller;
 import rko.guddo.dto.AuthenticationRequestDTO;
 import rko.guddo.dto.RegisterRequestDTO;
 import rko.guddo.dto.UpdatePasswordRequestDTO;
+import rko.guddo.exception.EmailAlreadyExistsException;
 import rko.guddo.service.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,13 +28,20 @@ public class AuthenticationController {
     //registration
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request, BindingResult result) {
+    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request,
+                                      BindingResult result) {
         if (result.hasErrors()) {
-            return new ResponseEntity<>(result.getAllErrors(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(result.getAllErrors());
         }
-        service.register(request);
-        return ResponseEntity.ok("User created successfully");
+
+        try {
+            service.register(request);
+            return ResponseEntity.ok("User created successfully");
+        } catch (EmailAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
+
     //login
     @PostMapping("/login")
     public ResponseEntity<?> authenticate(@RequestBody @Valid AuthenticationRequestDTO request, BindingResult result) {
@@ -44,6 +52,7 @@ public class AuthenticationController {
         }
         return ResponseEntity.ok(service.authenticate(request));
     }
+
     //update password
     @PutMapping("/update-password")
     public ResponseEntity<?> updatePassword(@RequestBody @Valid UpdatePasswordRequestDTO request) {
@@ -53,8 +62,8 @@ public class AuthenticationController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-
     }
+
     //refresh token
     @PostMapping("/refresh-token")
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {

@@ -7,19 +7,25 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RegisterRequestDTO {
+public class RegisterRequestDTO implements Serializable {
 
-    private String name;
+    private static final Long serialVersionUID = 5926468583005150707L;
 
-    private String email;
+    @NotBlank(message = "First is mandatory")
+    private String firstname;
+
+    private String lastname;
+
 
     @Column(unique = true, nullable = false)
-    @NotBlank(message = "Username is mandatory")
-    private String username;
+    @NotBlank(message = "Email is mandatory")
+    private String email;
 
     @NotBlank(message = "Password is mandatory")
     private String password;

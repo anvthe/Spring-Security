@@ -1,8 +1,9 @@
 package rko.guddo.service;
 
 import rko.guddo.domain.User;
-import rko.guddo.dto.UserDto;
-import rko.guddo.exception.UsernameAlreadyExistsException;
+import rko.guddo.dto.RegisterRequestDTO;
+
+import rko.guddo.exception.EmailAlreadyExistsException;
 import rko.guddo.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -18,18 +19,18 @@ public class UserServiceImpl {
 
     private final PasswordEncoder passwordEncoder;
 
-    public void registerUser(UserDto userDto) {
-        // Check if username already exists
-        if (userRepository.existsByUsername(userDto.getUsername())) {
-            throw new UsernameAlreadyExistsException("Username is already registered");
+    public void registerUser(RegisterRequestDTO userDto) {
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new EmailAlreadyExistsException("Email is already registered");
         }
 
         // Create new User entity
         User user = new User();
-        user.setUsername(userDto.getUsername());
-        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
         user.setEmail(userDto.getEmail());
-        // Set other fields from userDto if needed
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+
 
         // Save to database
         userRepository.save(user);
