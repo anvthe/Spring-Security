@@ -30,6 +30,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+    //registration
     public void register(RegisterRequestDTO request) {
         var user = User.builder()
                 .name(request.getName())
@@ -41,6 +42,7 @@ public class AuthenticationService {
         repository.save(user);
     }
 
+    //login
     public String authenticate(@Valid AuthenticationRequestDTO request) {
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(),
                 request.getPassword()));
@@ -52,6 +54,7 @@ public class AuthenticationService {
         }
     }
 
+    //update password
     @Transactional
     public void updatePassword(UpdatePasswordRequestDTO request) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -67,6 +70,7 @@ public class AuthenticationService {
         repository.save(user);
     }
 
+    //refresh token
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authHeader = request.getHeader("Authorization");
         String refreshToken;

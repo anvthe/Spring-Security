@@ -24,6 +24,7 @@ import java.util.Map;
 public class AuthenticationController {
     private final AuthenticationService service;
 
+    //registration
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request, BindingResult result) {
@@ -33,7 +34,7 @@ public class AuthenticationController {
         service.register(request);
         return ResponseEntity.ok("User created successfully");
     }
-
+    //login
     @PostMapping("/login")
     public ResponseEntity<?> authenticate(@RequestBody @Valid AuthenticationRequestDTO request, BindingResult result) {
         if (result.hasErrors()) {
@@ -43,7 +44,7 @@ public class AuthenticationController {
         }
         return ResponseEntity.ok(service.authenticate(request));
     }
-
+    //update password
     @PutMapping("/update-password")
     public ResponseEntity<?> updatePassword(@RequestBody @Valid UpdatePasswordRequestDTO request) {
         try {
@@ -54,7 +55,7 @@ public class AuthenticationController {
         }
 
     }
-
+    //refresh token
     @PostMapping("/refresh-token")
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         service.refreshToken(request, response);
