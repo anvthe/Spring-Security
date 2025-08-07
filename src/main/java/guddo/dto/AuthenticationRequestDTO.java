@@ -19,9 +19,9 @@ public class AuthenticationRequestDTO implements Serializable {
     private static final Long serialVersionUID = 5926468583005150707L;
 
     @Column(unique = true)
-    @NotBlank(message = "Email must not be blank")
-    @Size(max = 100, message = "Email must be less than 100 characters")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is mandatory")
+    @Size(max = 100)
+    @Email(message = "Please provide a valid email address")
     private String email;
 
     @NotBlank(message = "Password is mandatory")

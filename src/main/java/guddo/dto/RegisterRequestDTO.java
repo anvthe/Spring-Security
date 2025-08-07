@@ -1,6 +1,7 @@
 package guddo.dto;
 
 import jakarta.persistence.Column;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,7 @@ public class RegisterRequestDTO implements Serializable {
 
     private static final Long serialVersionUID = 5926468583005150707L;
 
-    @NotBlank(message = "First is mandatory")
+    @NotBlank(message = "First name is mandatory")
     private String firstname;
 
     private String lastname;
@@ -25,6 +26,7 @@ public class RegisterRequestDTO implements Serializable {
 
     @Column(unique = true, nullable = false)
     @NotBlank(message = "Email is mandatory")
+    @Email(message = "Please provide a valid email address")
     private String email;
 
     @NotBlank(message = "Password is mandatory")

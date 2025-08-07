@@ -22,6 +22,8 @@ public class JwtService {
     @Value("${application.secret.key}")
     private String SECRET_KEY;
 
+    // Token expiration time (2 days in milliseconds)
+    private static final long JWT_EXPIRATION_MS = 1000L * 60 * 60 * 24 * 2;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -41,7 +43,7 @@ public class JwtService {
     }
 
     public String generateToken(Map<String, Object> extractClaims, UserDetails userDetails) {
-        return Jwts.builder().setClaims(extractClaims).setSubject(userDetails.getUsername()).setIssuedAt(new Date(System.currentTimeMillis())).setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 60 * 24 * 2)).signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
+        return Jwts.builder().setClaims(extractClaims).setSubject(userDetails.getUsername()).setIssuedAt(new Date(System.currentTimeMillis())).setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION_MS)).signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
     }
 
 

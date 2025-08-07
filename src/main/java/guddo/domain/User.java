@@ -28,7 +28,7 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "First name must be")
+    @NotBlank(message = "First name is mandatory")
     private String firstname;
 
     private String lastname;
@@ -36,12 +36,12 @@ public class User implements UserDetails {
 
 
     @Column(unique = true)
-    @NotBlank(message = "Email must not be blank")
-    @Size(max = 100, message = "Email must be less than 100 characters")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is mandatory")
+    @Size(max = 100)
+    @Email(message = "Please provide a valid email address")
     private String email;
 
-    @NotBlank(message = "Password must be")
+    @NotBlank(message = "Password is mandatory")
     private String password;
 
     @Enumerated(EnumType.STRING)
