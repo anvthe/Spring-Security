@@ -2,10 +2,7 @@ package guddo.service;
 
 import guddo.domain.User;
 import guddo.domain.enums.Role;
-import guddo.dto.AuthenticationRequestDTO;
-import guddo.dto.RegisterRequestDTO;
-import guddo.dto.TokenRefreshDTO;
-import guddo.dto.UpdatePasswordRequestDTO;
+import guddo.dto.*;
 import guddo.exception.EmailAlreadyExistsException;
 import guddo.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+
 
 @Service
 @RequiredArgsConstructor
@@ -64,34 +62,47 @@ public class AuthenticationService {
         }
     }
 
+
+
     //update password
     @Transactional
     public void updatePassword(UpdatePasswordRequestDTO request) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = repository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Email not found"));
-        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+        // Get the logged-in user's email
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // Find the user by email
+        User user = repository.findByEmail(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Validate current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new RuntimeException("Old password is incorrect");
         }
+
+        // Validate new + confirm match
         if (!request.passwordsMatch()) {
             throw new RuntimeException("New password and confirm password do not match");
         }
+
+        // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
     }
+
+
 
     //refresh token
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String authHeader = request.getHeader("Authorization");
         String refreshToken;
-        String email;
+        String userEmail;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             refreshToken = authHeader.substring(7);
-            email = jwtService.extractEmail(refreshToken);
+            userEmail = jwtService.extractUsername(refreshToken);
 
-            if (email != null) {
-                var user = repository.findByEmail(email).orElseThrow(
+            if (userEmail != null) {
+                var user = repository.findByEmail(userEmail).orElseThrow(
                         () -> new UsernameNotFoundException("User not found")
                 );
 

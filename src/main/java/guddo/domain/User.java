@@ -2,7 +2,9 @@ package guddo.domain;
 
 import guddo.domain.enums.Role;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,14 +28,17 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Username must be")
+    @NotBlank(message = "First name must be")
     private String firstname;
 
     private String lastname;
 
 
+
     @Column(unique = true)
-    @NotBlank(message = "Username must be")
+    @NotBlank(message = "Email must not be blank")
+    @Size(max = 100, message = "Email must be less than 100 characters")
+    @Email(message = "Email should be valid")
     private String email;
 
     @NotBlank(message = "Password must be")

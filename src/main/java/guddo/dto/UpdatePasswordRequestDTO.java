@@ -12,13 +12,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UpdatePasswordRequestDTO {
 
-    @NotBlank(message = "Old password is required")
-    private String oldPassword;
+    @NotBlank
+    private String currentPassword;
 
-    @NotBlank(message = "New password is required")
+    @NotBlank
     private String newPassword;
 
-    @NotBlank(message = "Confirm password is required")
+    @NotBlank
     private String confirmPassword;
 
     public boolean passwordsMatch() {
