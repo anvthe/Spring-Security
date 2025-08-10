@@ -3,6 +3,7 @@ package guddo.dto;
 import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,5 +31,7 @@ public class RegisterRequestDTO implements Serializable {
     private String email;
 
     @NotBlank(message = "Password is mandatory")
+    @Size(min = 5, message = "Password must be at least 5 characters long")
     private String password;
+
 }

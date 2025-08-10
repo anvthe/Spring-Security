@@ -42,6 +42,7 @@ public class User implements UserDetails {
     private String email;
 
     @NotBlank(message = "Password is mandatory")
+    @Size(min = 5, message = "Password must be at least 5 characters long")
     private String password;
 
     @Enumerated(EnumType.STRING)

@@ -72,7 +72,7 @@ public class AuthenticationService {
 
         // Find the user by email
         User user = repository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found by email"));
 
         // Validate current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
