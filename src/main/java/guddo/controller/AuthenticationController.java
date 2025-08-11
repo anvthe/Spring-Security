@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,16 +26,40 @@ public class AuthenticationController {
     //@PreAuthorize("hasRole('ADMIN')")
 
     @PostMapping(WebApiUrlConstants.USER_REGISTER_API)
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request) {
+    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request, HttpServletRequest httpRequest) {
 
-        service.register(request);
-        return ResponseEntity.ok("User created successfully");
+        String appUrl = getAppUrl(httpRequest);
+        service.register(request, appUrl);
+
+        return ResponseEntity.ok("User created successfully. Please check your email to verify your account.");
     }
+
+    private String getAppUrl(HttpServletRequest request) {
+        return request.getScheme() + "://" + request.getServerName() +
+                (request.getServerPort() == 80 || request.getServerPort() == 443 ? "" : ":" + request.getServerPort());
+    }
+
+
+    @GetMapping(WebApiUrlConstants.USER_VERIFY_EMAIL_API)
+    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+        try {
+            String res = service.verifyToken(token);
+            return ResponseEntity.ok(res);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+    }
+
 
     //login
     @PostMapping(WebApiUrlConstants.USER_LOGIN_API)
     public ResponseEntity<?> authenticate(@RequestBody @Valid AuthenticationRequestDTO request) {
-        return ResponseEntity.ok(service.authenticate(request));
+        try {
+            String jwt = service.authenticate(request);
+            return ResponseEntity.ok(jwt);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+        }
     }
 
 

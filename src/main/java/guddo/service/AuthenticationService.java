@@ -4,14 +4,17 @@ import guddo.domain.User;
 import guddo.domain.enums.Role;
 import guddo.dto.*;
 import guddo.exception.EmailAlreadyExistsException;
+import guddo.model.VerificationToken;
 import guddo.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import guddo.repository.VerificationTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,18 +22,23 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final UserRepository repository;
+    private final VerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
 
     //registration
-    public void register(RegisterRequestDTO request) {
+    @Transactional
+    public void register(RegisterRequestDTO request, String appUrl) {
 
         // Check if email already exists
         if (repository.existsByEmail(request.getEmail())) {
@@ -38,28 +46,70 @@ public class AuthenticationService {
         }
 
         // Build and save new user
-        var user = User.builder()
+        User user = User.builder()
                 .firstname(request.getFirstname())
                 .lastname(request.getLastname())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
+                .enabled(false)
                 .build();
+
         repository.save(user);
+
+        String token = UUID.randomUUID().toString();
+        VerificationToken verificationToken = VerificationToken.builder()
+                .token(token)
+                .user(user)
+                .expiryDate(LocalDateTime.now().plusHours(24))
+                .build();
+
+        tokenRepository.save(verificationToken);
+
+        String link = appUrl + "/auth/verify?token=" + token;
+        String subject = "Email Verification";
+        String text = "Hello " + user.getFirstname() + ",\n\nPlease verify your account by clicking the link below:\n"
+                + link + "\n\nThis link will expire in 24 hours.";
+
+        emailService.sendSimpleMessage(user.getEmail(), subject, text);
+    }
+
+    //verify
+    @Transactional
+    public String verifyToken(String token) {
+        VerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            tokenRepository.delete(verificationToken);
+            throw new RuntimeException("Token expired");
+        }
+
+        User user = verificationToken.getUser();
+        user.setEnabled(true);
+        repository.save(user);
+
+        tokenRepository.delete(verificationToken);
+        return "Account verified successfully";
     }
 
 
 
-    //login
+    @Transactional
     public String authenticate(@Valid AuthenticationRequestDTO request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(),
-                request.getPassword()));
         try {
-            var user = repository.findByEmail(request.getEmail()).orElseThrow();
-            return jwtService.generateToken(user);
-        } catch (UsernameNotFoundException usernameNotFoundException) {
-            return usernameNotFoundException.getMessage();
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (DisabledException ex) {
+            // Throw your custom message here for disabled users (unverified)
+            throw new RuntimeException("Email not verified. Please verify your email before login.");
         }
+
+        var user = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        return jwtService.generateToken(user);
     }
 
 
@@ -88,7 +138,6 @@ public class AuthenticationService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
     }
-
 
 
     //refresh token
