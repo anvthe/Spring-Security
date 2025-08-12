@@ -16,7 +16,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -135,24 +134,24 @@ public class AuthenticationService {
     //update password
     @Transactional
     public void updatePassword(UpdatePasswordRequestDTO request) {
-        // Get the logged-in user's email
+
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // Find the user by email
+
         User user = userRepository.findByEmail(username)
                 .orElseThrow(() -> new RuntimeException("User not found by this email"));
 
-        // Validate current password
+
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new IncorrectCurrentPasswordException();
         }
 
-        // Validate new + confirm match
+
         if (!request.passwordsMatch()) {
             throw new RuntimeException("New password and confirm password do not match");
         }
 
-        // Update password
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -181,6 +180,7 @@ public class AuthenticationService {
     }
 
 
+    //rest password
     public void resetPassword(String token, ResetPasswordDTO dto) {
         PasswordResetToken resetToken = pwResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid reset token"));

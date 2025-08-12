@@ -20,16 +20,17 @@ import java.io.IOException;
 public class AuthenticationController {
     private final AuthenticationService authService;
 
-    //registration
+
     //@PreAuthorize("hasRole('ADMIN')")
 
+    //registration
     @PostMapping(WebApiUrlConstants.USER_REGISTER_API)
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request, HttpServletRequest httpRequest) {
 
         String appUrl = getAppUrl(httpRequest);
         authService.register(request, appUrl);
 
-        return ResponseEntity.ok("User created successfully. Please check your email to verify your account.");
+        return ResponseEntity.ok("Account created successfully. Please check your email to verify your account.");
     }
 
     private String getAppUrl(HttpServletRequest request) {
@@ -38,6 +39,7 @@ public class AuthenticationController {
     }
 
 
+    //verify
     @GetMapping(WebApiUrlConstants.USER_VERIFY_EMAIL_API)
     public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
         try {
@@ -68,14 +70,13 @@ public class AuthenticationController {
         try {
             authService.updatePassword(request);
             return ResponseEntity.ok("Password updated successfully");
-        }
-        catch (RuntimeException ex) {
+        } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
 
     }
 
-    //forget password
+    //forgot password
     @PostMapping(WebApiUrlConstants.USER_FORGOT_PASSWORD_API)
     public ResponseEntity<?> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequestDTO request, HttpServletRequest httpRequest) {
@@ -92,6 +93,7 @@ public class AuthenticationController {
         }
     }
 
+    //rest password
     @PostMapping((WebApiUrlConstants.USER_RESET_PASSWORD_API))
     public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestBody @Valid ResetPasswordDTO request) {
         try {
