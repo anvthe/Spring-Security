@@ -9,6 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.util.Collections;
+import java.util.Map;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -45,5 +48,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ex.getMessage());
+    }
+
+    @ExceptionHandler(IncorrectCurrentPasswordException.class)
+    public ResponseEntity<Map<String,String>> handleIncorrectCurrentPassword(IncorrectCurrentPasswordException ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Collections.singletonMap("error", ex.getMessage()));
     }
 }

@@ -6,12 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class UpdatePasswordRequestDTO {
-
-    @NotBlank(message = "Current password is mandatory")
-    private String currentPassword;
+@AllArgsConstructor
+public class ResetPasswordDTO {
 
     @NotBlank(message = "New password is mandatory")
     private String newPassword;

@@ -1,9 +1,7 @@
 package guddo.controller;
 
 import guddo.WebApiUrlConstants.WebApiUrlConstants;
-import guddo.dto.AuthenticationRequestDTO;
-import guddo.dto.RegisterRequestDTO;
-import guddo.dto.UpdatePasswordRequestDTO;
+import guddo.dto.*;
 import guddo.service.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,7 +18,7 @@ import java.io.IOException;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
-    private final AuthenticationService service;
+    private final AuthenticationService authService;
 
     //registration
     //@PreAuthorize("hasRole('ADMIN')")
@@ -29,7 +27,7 @@ public class AuthenticationController {
     public ResponseEntity<?> register(@RequestBody @Valid RegisterRequestDTO request, HttpServletRequest httpRequest) {
 
         String appUrl = getAppUrl(httpRequest);
-        service.register(request, appUrl);
+        authService.register(request, appUrl);
 
         return ResponseEntity.ok("User created successfully. Please check your email to verify your account.");
     }
@@ -43,7 +41,7 @@ public class AuthenticationController {
     @GetMapping(WebApiUrlConstants.USER_VERIFY_EMAIL_API)
     public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
         try {
-            String res = service.verifyToken(token);
+            String res = authService.verifyToken(token);
             return ResponseEntity.ok(res);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
@@ -55,7 +53,7 @@ public class AuthenticationController {
     @PostMapping(WebApiUrlConstants.USER_LOGIN_API)
     public ResponseEntity<?> authenticate(@RequestBody @Valid AuthenticationRequestDTO request) {
         try {
-            String jwt = service.authenticate(request);
+            String jwt = authService.authenticate(request);
             return ResponseEntity.ok(jwt);
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
@@ -67,14 +65,47 @@ public class AuthenticationController {
     @PutMapping(WebApiUrlConstants.USER_UPDATE_PASSWORD_API)
     public ResponseEntity<?> updatePassword(@RequestBody @Valid UpdatePasswordRequestDTO request) {
 
-        service.updatePassword(request);
-        return ResponseEntity.ok("Password updated successfully");
+        try {
+            authService.updatePassword(request);
+            return ResponseEntity.ok("Password updated successfully");
+        }
+        catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        }
+
+    }
+
+    //forget password
+    @PostMapping(WebApiUrlConstants.USER_FORGOT_PASSWORD_API)
+    public ResponseEntity<?> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequestDTO request, HttpServletRequest httpRequest) {
+        try {
+            String appUrl = httpRequest.getRequestURL()
+                    .toString()
+                    .replace(httpRequest.getRequestURI(), "");
+
+            authService.requestPasswordReset(request.getEmail(), appUrl);
+
+            return ResponseEntity.ok("Password reset link sent to your email");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping((WebApiUrlConstants.USER_RESET_PASSWORD_API))
+    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestBody @Valid ResetPasswordDTO request) {
+        try {
+            authService.resetPassword(token, request);
+            return ResponseEntity.ok("Password reset successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 
     //refresh token
     @PostMapping(WebApiUrlConstants.USER_REFRESH_TOKEN_API)
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        service.refreshToken(request, response);
+        authService.refreshToken(request, response);
     }
 }
