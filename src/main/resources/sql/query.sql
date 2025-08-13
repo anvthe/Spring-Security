@@ -25,3 +25,13 @@ CREATE TABLE password_reset_tokens (
                                        is_used BOOLEAN DEFAULT FALSE,
                                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE password_reset_otps (
+                                     id BIGSERIAL PRIMARY KEY,
+                                     otp VARCHAR(255) NOT NULL,
+                                     user_id BIGINT NOT NULL UNIQUE,
+                                     expiry_date TIMESTAMP,
+                                     CONSTRAINT fk_password_reset_otps_user FOREIGN KEY (user_id) REFERENCES users (id)
+);
+

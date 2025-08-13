@@ -41,12 +41,17 @@ public class AuthenticationController {
 
     //verify
     @GetMapping(WebApiUrlConstants.USER_VERIFY_EMAIL_API)
-    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+    public ResponseEntity<String> verifyAccount(@RequestParam("token") String token) {
         try {
-            String res = authService.verifyToken(token);
-            return ResponseEntity.ok(res);
-        } catch (RuntimeException ex) {
+            String result = authService.verifyToken(token);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+
             return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred. Please try again later.");
         }
     }
 
@@ -57,8 +62,13 @@ public class AuthenticationController {
         try {
             String jwt = authService.authenticate(request);
             return ResponseEntity.ok(jwt);
-        } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ex.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ex.getMessage());
+        } catch (Exception ex) {
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred. Please try again later.");
         }
     }
 
@@ -70,8 +80,11 @@ public class AuthenticationController {
         try {
             authService.updatePassword(request);
             return ResponseEntity.ok("Password updated successfully");
-        } catch (RuntimeException ex) {
+        } catch (IllegalArgumentException | IllegalStateException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred. Please try again later.");
         }
 
     }
@@ -88,8 +101,13 @@ public class AuthenticationController {
             authService.requestPasswordReset(request.getEmail(), appUrl);
 
             return ResponseEntity.ok("Password reset link sent to your email");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred. Please try again later.");
         }
     }
 
@@ -99,8 +117,14 @@ public class AuthenticationController {
         try {
             authService.resetPassword(token, request);
             return ResponseEntity.ok("Password reset successfully");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (Exception ex) {
+
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred. Please try again later.");
         }
     }
 

@@ -10,35 +10,32 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "verification_tokens")
+@Table(name = "password_reset_otps")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VerificationToken {
+public class PasswordResetOtp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String token;
+    private String otp;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne
+    @JoinColumn(nullable = false)
     private User user;
 
-    @Column(name = "expiry_timestamp", nullable = false)
     private LocalDateTime expiryDate;
 
-    public VerificationToken(String token, User user) {
-        this.token = token;
+    public PasswordResetOtp(String otp, User user) {
+        this.otp = otp;
         this.user = user;
-        this.expiryDate = LocalDateTime.now().plusMinutes(60); // valid for 30 min
+        this.expiryDate = LocalDateTime.now().plusMinutes(5);
     }
 
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiryDate);
     }
-
 }

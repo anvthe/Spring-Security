@@ -42,6 +42,10 @@ public class User implements UserDetails {
     @Email(message = "Please provide a valid email address")
     private String email;
 
+//    @Column(unique = true, nullable = false)
+//    @NotBlank(message = "Phone number is mandatory")
+//    private String phone;
+
     @NotBlank(message = "Password is mandatory")
     @Size(min = 5, message = "Password must be at least 5 characters long")
     private String password;

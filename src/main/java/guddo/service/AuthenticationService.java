@@ -26,7 +26,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 
@@ -39,7 +38,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final EmailService emailService;
+    private final EmailSenderService emailSenderService;
 
     //registration
     @Transactional
@@ -47,7 +46,7 @@ public class AuthenticationService {
 
         // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException("Email address already registered!");
+            throw new EmailAlreadyExistsException("This email address already registered!");
         }
 
         // Build and save new user
@@ -62,32 +61,29 @@ public class AuthenticationService {
 
         userRepository.save(user);
 
-        String token = UUID.randomUUID().toString();
-        VerificationToken verificationToken = VerificationToken.builder()
-                .token(token)
-                .user(user)
-                .expiryDate(LocalDateTime.now().plusMinutes(5))
-                .build();
-
+        String verifyToken = UUID.randomUUID().toString();
+        VerificationToken verificationToken = new VerificationToken(verifyToken, user);
         tokenRepository.save(verificationToken);
 
-        String link = appUrl + "/auth/verify?token=" + token;
-        String subject = "Email Verification";
-        String text = "Hello " + user.getFirstname() + ",\n\nPlease verify your account by clicking the link below:\n"
-                + link + "\n\nThis link will expire in 24 hours.";
+        String registerLink = appUrl + "/auth/verify?token=" + verifyToken;
+        String subject = "Account Verification";
+        String text = String.format(
+                "Hello %s,\n\nPlease verify your account by clicking the link below:\n%s\n\nThis link will expire in 60 minutes.",
+                user.getFirstname(), registerLink
+        );
 
-        emailService.sendSimpleMessage(user.getEmail(), subject, text);
+        emailSenderService.sendSimpleMessage(user.getEmail(), subject, text);
     }
 
     //verify
     @Transactional
     public String verifyToken(String token) {
         VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid verification token"));
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (verificationToken.isExpired()) {
             tokenRepository.delete(verificationToken);
-            throw new RuntimeException("Token expired");
+            throw new IllegalStateException("Token has expired");
         }
 
         User user = verificationToken.getUser();
@@ -106,14 +102,14 @@ public class AuthenticationService {
         var userOpt = userRepository.findByEmail(request.getEmail());
         if (userOpt.isEmpty()) {
 
-            throw new RuntimeException("Invalid email or password.");
+            throw new IllegalArgumentException("Invalid email or password.");
         }
 
         User user = userOpt.get();
 
         if (!user.isEnabled()) {
 
-            throw new RuntimeException("Account not verified. Please verify before logging in.");
+            throw new IllegalArgumentException("Account not verified. Please verify before logging in.");
         }
 
         try {
@@ -122,9 +118,9 @@ public class AuthenticationService {
             );
         } catch (BadCredentialsException ex) {
 
-            throw new RuntimeException("Invalid email or password.");
+            throw new IllegalArgumentException("Invalid email or password.");
         } catch (DisabledException ex) {
-            throw new RuntimeException("Account not verified. Please verify before logging in.");
+            throw new IllegalArgumentException("Account not verified. Please verify before logging in.");
         }
 
         return jwtService.generateToken(user);
@@ -139,7 +135,7 @@ public class AuthenticationService {
 
 
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new RuntimeException("User not found by this email"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found by this email"));
 
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -148,9 +144,8 @@ public class AuthenticationService {
 
 
         if (!request.passwordsMatch()) {
-            throw new RuntimeException("New password and confirm password do not match");
+            throw new IllegalArgumentException("New password and confirm password do not match");
         }
-
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -165,18 +160,18 @@ public class AuthenticationService {
             throw new IllegalStateException("Account is not verified!");
         }
 
-        String token = UUID.randomUUID().toString();
-        PasswordResetToken resetToken = new PasswordResetToken(token, user);
+        String restToken = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(restToken, user);
         pwResetTokenRepository.save(resetToken);
 
-        String resetLink = appUrl + "/auth/reset-password?token=" + token;
+        String resetLink = appUrl + "/auth/reset-password?token=" + restToken;
         String subject = "Password Reset Request";
         String text = String.format(
                 "Hello %s,\n\nClick the link below to reset your password:\n%s\n\nThis link will expire in 5 minutes.",
                 user.getFirstname(), resetLink
         );
 
-        emailService.sendSimpleMessage(user.getEmail(), subject, text);
+        emailSenderService.sendSimpleMessage(user.getEmail(), subject, text);
     }
 
 
@@ -184,6 +179,10 @@ public class AuthenticationService {
     public void resetPassword(String token, ResetPasswordDTO dto) {
         PasswordResetToken resetToken = pwResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid reset token"));
+
+        if (resetToken.isExpired()) {
+            throw new IllegalStateException("Token has expired");
+        }
 
         if (!dto.passwordsMatch()) {
             throw new IllegalArgumentException("New password and confirm password do not match!");
